@@ -69,7 +69,13 @@ def for_each_card(my_list: list) -> list:
             else:
                 cards[i["Номер карты"][1:]] = float(str(i["Сумма платежа"])[1:])
     for k, v in cards.items():
-        result.append({"last_digits": k, "total_spent": round(v, 2), "cashback": round(v / 100, 2)})
+        result.append(
+            {
+                "last_digits": k,
+                "total_spent": round(v, 2),
+                "cashback": round(v / 100, 2),
+            }
+        )
     logger.info("Завершение работы функции (for_each_card)")
     return result
 
@@ -84,7 +90,9 @@ def currency_rates(currency: list) -> list[dict]:
         with urllib.request.urlopen(url) as response:
             body_json = response.read()
         body_dict = json.loads(body_json)
-        result.append({"currency": i, "rate": round(body_dict["conversion_rates"]["RUB"], 2)})
+        result.append(
+            {"currency": i, "rate": round(body_dict["conversion_rates"]["RUB"], 2)}
+        )
 
     logger.info("Создание списка словарей для функции - currency_rates")
 
@@ -99,18 +107,28 @@ def top_five_transaction(my_list: list) -> list:
     result = []
     logger.info("Перебор транзакций в функции (top_five_transaction)")
     for i in my_list:
-        if i["Категория"] not in all_transactions and str(i["Сумма платежа"])[0:1] != "-":
+        if (
+            i["Категория"] not in all_transactions
+            and str(i["Сумма платежа"])[0:1] != "-"
+        ):
             if i["Категория"] != "Пополнения":
                 all_transactions[i["Категория"]] = float(str(i["Сумма платежа"])[1:])
         elif (
-                i["Категория"] in all_transactions
-                and float(str(i["Сумма платежа"])[1:]) > all_transactions[i["Категория"]]
+            i["Категория"] in all_transactions
+            and float(str(i["Сумма платежа"])[1:]) > all_transactions[i["Категория"]]
         ):
             all_transactions[i["Категория"]] = float(str(i["Сумма платежа"])[1:])
     for i in my_list:
         for k, v in all_transactions.items():
             if k == i["Категория"] and v == float(str(i["Сумма платежа"])[1:]):
-                result.append({"date": i["Дата платежа"], "amount": v, "category": k, "description": i["Описание"]})
+                result.append(
+                    {
+                        "date": i["Дата платежа"],
+                        "amount": v,
+                        "category": k,
+                        "description": i["Описание"],
+                    }
+                )
     logger.info("Окончание работы функции (top_five_transaction)")
 
     return result
@@ -128,6 +146,11 @@ def get_price_stock(stocks: list) -> list:
         response = requests.get(url, timeout=5, allow_redirects=False)
         result = response.json()
 
-        stock_prices.append({"stock": stock, "price": round(float(result["Global Quote"]["05. price"]), 2)})
+        stock_prices.append(
+            {
+                "stock": stock,
+                "price": round(float(result["Global Quote"]["05. price"]), 2),
+            }
+        )
     logger.info("Функция get_price_stock успешно завершила свою работу")
     return stock_prices
