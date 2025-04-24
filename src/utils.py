@@ -1,4 +1,3 @@
-import datetime
 import json
 import logging
 import os
@@ -36,20 +35,6 @@ def read_excel(path_file: str) -> list[dict]:
         axis=1,
     ).tolist()
     return result
-
-
-def greetings():
-    """Функция приветствия"""
-
-    time_obj = datetime.datetime.now()
-    if 6 <= time_obj.hour <= 12:
-        return "Доброе утро"
-    elif 13 <= time_obj.hour <= 18:
-        return "Добрый день"
-    elif 19 <= time_obj.hour <= 23:
-        return "Добрый вечер"
-    else:
-        return "Доброй ночи"
 
 
 def for_each_card(my_list: list) -> list:

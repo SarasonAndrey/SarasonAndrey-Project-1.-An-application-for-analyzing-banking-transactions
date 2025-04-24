@@ -3,8 +3,14 @@ from unittest.mock import Mock, patch
 
 from dotenv import load_dotenv
 
-from src.utils import (currency_rates, for_each_card, get_price_stock,
-                       greetings, read_excel, top_five_transaction)
+from src.utils import (
+    currency_rates,
+    for_each_card,
+    get_price_stock,
+    greetings,
+    read_excel,
+    top_five_transaction,
+)
 
 load_dotenv()
 API_KEY_CUR = os.getenv("API_KEY_CUR")
