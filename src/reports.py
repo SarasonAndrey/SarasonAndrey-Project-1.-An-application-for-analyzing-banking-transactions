@@ -57,27 +57,52 @@ def spending_by_category(
         return final_list
     else:
         logger.info("Обработка условия на создание")
-        day, month, year = date.split(".")
-        date_obj = datetime.datetime(int(year), int(month), int(day))
-        date_start = date_obj - datetime.timedelta(days=90)
+        try:
+            # Добавляем проверку корректности даты перед созданием объекта
+            day, month, year = map(int, date.split("-"))
 
-        for i in transactions:
-            if i["Категория"] == category:
-                list_by_category.append(i)
+            # Проверка корректности даты перед созданием объекта datetime
+            datetime.date(year, month, day)
 
-        for i in list_by_category:
-            if i["Дата платежа"] == "nan" or type(i["Дата платежа"]) is float:
-                continue
-            else:
-                day_, month_, year_ = i["Дата платежа"].split(".")
-                date_obj_ = datetime.datetime(int(year), int(month), int(day))
-                if date_start <= date_obj_ <= date_start + datetime.timedelta(days=90):
-                    final_list.append(i["Сумма платежа"])
-        logger.info("Завершение работы функции")
-        data_json = json.dumps(
-            final_list,
-            indent=4,
-            ensure_ascii=False,
-        )
+            date_obj = datetime.datetime(year, month, day)
+            date_start = date_obj - datetime.timedelta(days=90)
 
-        return data_json
+            for i in transactions:
+                if i["Категория"] == category:
+                    list_by_category.append(i)
+
+            for i in list_by_category:
+                if i["Дата платежа"] == "nan" or type(i["Дата платежа"]) is float:
+                    continue
+                else:
+                    try:
+                        day_, month_, year_ = map(int, i["Дата платежа"].split("."))
+
+                        # Проверка корректности даты транзакции
+                        datetime.date(year_, month_, day_)
+
+                        date_obj_ = datetime.datetime(year_, month_, day_)
+                        if (
+                            date_start
+                            <= date_obj_
+                            <= date_start + datetime.timedelta(days=90)
+                        ):
+                            final_list.append(i["Сумма платежа"])
+                    except ValueError:
+                        logger.warning(
+                            f"Некорректная дата в транзакции: {i['Дата платежа']}"
+                        )
+                        continue
+
+            logger.info("Завершение работы функции")
+            data_json = json.dumps(
+                final_list,
+                indent=4,
+                ensure_ascii=False,
+            )
+
+            return data_json
+
+        except ValueError as e:
+            logger.error(f"Ошибка при обработке даты: {e}")
+            return []

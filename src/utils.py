@@ -1,7 +1,5 @@
-import json
 import logging
 import os
-import urllib.request
 
 import pandas as pd
 import requests
@@ -21,7 +19,14 @@ logger.setLevel(logging.INFO)
 
 def read_excel(path_file: str) -> list[dict]:
     """Функция читает .xlsx файл и возвращает список словарей"""
-    df = pd.read_excel(path_file)
+    if isinstance(path_file, str):
+        df = pd.read_excel(path_file)
+        # Если уже DataFrame - возвращаем как есть
+    elif isinstance(path_file, pd.DataFrame):
+        df = path_file
+    else:
+        raise ValueError("Передайте путь к файлу или DataFrame")
+
     result = df.apply(
         lambda row: {
             "Дата платежа": row["Дата платежа"],
@@ -37,49 +42,29 @@ def read_excel(path_file: str) -> list[dict]:
     return result
 
 
-def for_each_card(my_list: list) -> list:
-    """Функция создания информации по каждой карте"""
-    logger.info("Начало работы функции (for_each_card)")
-    cards = {}
-    result = []
-    logger.info("Перебор транзакций")
-    for i in my_list:
-        if i["Номер карты"] == "nan" or type(i["Номер карты"]) is float:
-            continue
-        elif i["Сумма платежа"] == "nan":
-            continue
-        else:
-            if i["Номер карты"][1:] in cards:
-                cards[i["Номер карты"][1:]] += float(str(i["Сумма платежа"])[1:])
-            else:
-                cards[i["Номер карты"][1:]] = float(str(i["Сумма платежа"])[1:])
-    for k, v in cards.items():
-        result.append(
-            {
-                "last_digits": k,
-                "total_spent": round(v, 2),
-                "cashback": round(v / 100, 2),
-            }
-        )
-    logger.info("Завершение работы функции (for_each_card)")
-    return result
-
-
-def currency_rates(currency: list) -> list[dict]:
+def currency_rates(currencies: list[str]) -> list[dict[str, str | float]]:
     """Функция запроса курса валют"""
     logger.info("Начало работы функции (currency_rates)")
     api_key = API_KEY_CUR
+    url_base = "https://v6.exchangerate-api.com/v6/{}/latest/{}"
     result = []
-    for i in currency:
-        url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{i}"
-        with urllib.request.urlopen(url) as response:
-            body_json = response.read()
-        body_dict = json.loads(body_json)
-        result.append(
-            {"currency": i, "rate": round(body_dict["conversion_rates"]["RUB"], 2)}
-        )
 
-    logger.info("Создание списка словарей для функции - currency_rates")
+    try:
+        for curr in currencies:
+            try:
+                url = url_base.format(api_key, curr)
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()  # Вызовет исключение при ошибках HTTP
+                body_dict = response.json()
+
+                rate = body_dict.get("conversion_rates", {}).get("RUB", 0)
+                result.append({"currency": curr, "rate": round(rate, 2)})
+            except requests.RequestException as e:
+                logger.error(f"Ошибка при запросе курса для {curr}: {e}")
+                result.append({"currency": curr, "rate": None})
+    except Exception as e:
+        logger.error(f"Непредвиденная ошибка: {e}")
+        return []
 
     logger.info("Окончание работы функции - currency_rates")
     return result
@@ -88,34 +73,53 @@ def currency_rates(currency: list) -> list[dict]:
 def top_five_transaction(my_list: list) -> list:
     """Функция для получения топ-5 транзакций по сумме платежа"""
     logger.info("Начало работы функции (top_five_transaction)")
-    all_transactions = {}
-    result = []
-    logger.info("Перебор транзакций в функции (top_five_transaction)")
-    for i in my_list:
-        if (
-            i["Категория"] not in all_transactions
-            and str(i["Сумма платежа"])[0:1] != "-"
-        ):
-            if i["Категория"] != "Пополнения":
-                all_transactions[i["Категория"]] = float(str(i["Сумма платежа"])[1:])
-        elif (
-            i["Категория"] in all_transactions
-            and float(str(i["Сумма платежа"])[1:]) > all_transactions[i["Категория"]]
-        ):
-            all_transactions[i["Категория"]] = float(str(i["Сумма платежа"])[1:])
-    for i in my_list:
-        for k, v in all_transactions.items():
-            if k == i["Категория"] and v == float(str(i["Сумма платежа"])[1:]):
-                result.append(
-                    {
-                        "date": i["Дата платежа"],
-                        "amount": v,
-                        "category": k,
-                        "description": i["Описание"],
-                    }
-                )
-    logger.info("Окончание работы функции (top_five_transaction)")
 
+    # Словарь для хранения максимальных транзакций по категориям
+    all_transactions = {}
+
+    # Первый проход: определяем максимальные суммы по категориям
+    for transaction in my_list:
+        # Пропускаем отрицательные и категорию "Пополнения"
+        if (
+            transaction["Категория"] == "Пополнения"
+            or str(transaction["Сумма платежа"])[0:1] == "-"
+        ):
+            continue
+
+        amount = float(str(transaction["Сумма платежа"])[1:])
+
+        # Обновляем максимальную сумму для категории
+        if (
+            transaction["Категория"] not in all_transactions
+            or amount > all_transactions[transaction["Категория"]]
+        ):
+            all_transactions[transaction["Категория"]] = amount
+
+    # Второй проход: собираем топовые транзакции
+    result = []
+    for transaction in my_list:
+        category = transaction["Категория"]
+
+        # Проверяем соответствие максимальной сумме в категории
+        if (
+            category in all_transactions
+            and float(str(transaction["Сумма платежа"])[1:])
+            == all_transactions[category]
+        ):
+            result.append(
+                {
+                    "date": transaction["Дата платежа"],
+                    "amount": all_transactions[category],
+                    "category": category,
+                    "description": transaction["Описание"],
+                }
+            )
+
+    # Сортируем и берем топ-5
+    result.sort(key=lambda x: x["amount"], reverse=True)
+    result = result[:5]
+
+    logger.info("Окончание работы функции (top_five_transaction)")
     return result
 
 
@@ -124,18 +128,46 @@ def get_price_stock(stocks: list) -> list:
     logger.info("Начало работы функции (get_price_stock)")
     api_key = SP_500_API_KEY
     stock_prices = []
-    logger.info("Функция обрабатывает данные транзакций.")
-    for stock in stocks:
-        logger.info("Перебор акций в списке 'stocks' в функции (get_price_stock)")
-        url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={stock}&apikey={api_key}"
-        response = requests.get(url, timeout=5, allow_redirects=False)
-        result = response.json()
 
-        stock_prices.append(
-            {
-                "stock": stock,
-                "price": round(float(result["Global Quote"]["05. price"]), 2),
-            }
-        )
-    logger.info("Функция get_price_stock успешно завершила свою работу")
+    for stock in stocks:
+        try:
+            url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={stock}&apikey={api_key}"
+            response = requests.get(url, timeout=5, allow_redirects=False)
+            result = response.json()
+
+            # Проверка структуры ответа
+            if "Global Quote" in result and "05. price" in result["Global Quote"]:
+                stock_prices.append(
+                    {
+                        "stock": stock,
+                        "price": round(float(result["Global Quote"]["05. price"]), 2),
+                    }
+                )
+            else:
+                logger.warning(f"Неверный формат ответа для {stock}")
+                stock_prices.append(
+                    {
+                        "stock": stock,
+                        "price": None,
+                    }
+                )
+
+        except requests.RequestException as e:
+            logger.error(f"Ошибка сети для {stock}: {e}")
+            stock_prices.append(
+                {
+                    "stock": stock,
+                    "price": None,
+                }
+            )
+        except (ValueError, KeyError) as e:
+            logger.error(f"Ошибка обработки данных для {stock}: {e}")
+            stock_prices.append(
+                {
+                    "stock": stock,
+                    "price": None,
+                }
+            )
+
+    logger.info("Функция get_price_stock завершила работу")
     return stock_prices

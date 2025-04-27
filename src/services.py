@@ -1,6 +1,8 @@
 import json
 import logging
 
+import pandas as pd
+
 from src.decorators import decorator_search
 
 logger = logging.getLogger("services.log")
@@ -12,21 +14,24 @@ logger.setLevel(logging.INFO)
 
 
 @decorator_search
-def simple_search(my_list: list, string_search: str):
+def simple_search(df: pd.DataFrame, string_search: str):
     """Функция поиска по переданной строке"""
     result = []
     logger.info("Начало работы функции (simple_search)")
-    for i in my_list:
+
+    # Преобразуем DataFrame в список словарей
+    data_list = df.to_dict("records")
+
+    for i in data_list:
         if string_search == "":
             return result
-        elif (
-            i["Описание"] == "nan"
-            or type(i["Описание"]) is float
-            or i["Категория"] == "nan"
-            or type(i["Категория"]) is float
-        ):
-            continue
-        elif string_search in i["Описание"] or string_search in i["Категория"]:
+
+        # Обработка NaN значений
+        description = str(i.get("Описание", "")).lower()
+        category = str(i.get("Категория", "")).lower()
+        search_term = string_search.lower()
+
+        if search_term in description or search_term in category:
             result.append(i)
 
     logger.info("Конец работы функции (simple_search)")

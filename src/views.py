@@ -1,17 +1,11 @@
-import datetime
 import logging
-from datetime import datetime
-import os
+from datetime import datetime, timedelta
+from typing import Any
 
 import pandas as pd
 from pandas.io import json
 
-from src.utils import (
-    currency_rates,
-    for_each_card,
-    get_price_stock,
-    top_five_transaction,
-)
+from src.utils import currency_rates, get_price_stock, top_five_transaction
 
 logger = logging.getLogger("views.log")
 file_handler = logging.FileHandler("views.log", "a")
@@ -44,17 +38,18 @@ def greetings(input_datetime_str: str) -> str:
         return '"Доброй ночи"'
 
 
-# data_frame = pd.read_excel("../data/operations.xlsx")
-base_dir = os.path.dirname(os.path.abspath(__file__))
-data_file_path = os.path.join(base_dir, '..', 'data', 'operations.xlsx')
+data_frame = pd.read_excel(
+    r"C:\Users\YOGA 260\Pycharm_MY_Projects\Курсовые\project1\data\operations.xlsx"
+)
+# "../data/operations.xlsx""
+df = data_frame
 
 
-
-def main(date: str, df_transactions, stocks: list, currency: list):
+def main(date: str, df_transactions: Any, stocks: list, currency: list):
     """Функция создающая JSON ответ для главной страницы"""
     logger.info("Начало работы главной функции (main)")
     final_list = filter_by_date(date, df_transactions)
-    greeting = greetings()
+    greeting = greetings(f"{date} 00:00:00")
     cards = for_each_card(final_list)
     top_trans = top_five_transaction(final_list)
     stocks_prices = get_price_stock(stocks)
@@ -86,7 +81,7 @@ def filter_by_date(date: str, my_list: list) -> list:
         return list_by_date
     try:
         year, month, day = int(date[0:4]), int(date[5:7]), int(date[8:10])
-        date_obj = datetime.datetime(year, month, day)
+        date_obj = datetime(year, month, day)
     except (ValueError, IndexError):
         logger.error("Неверный формат даты")
         return list_by_date
@@ -101,12 +96,40 @@ def filter_by_date(date: str, my_list: list) -> list:
             continue
 
         try:
-            payment_date_obj = datetime.datetime.strptime(str(payment_date), "%d.%m.%Y")
+            payment_date_obj = datetime.strptime(str(payment_date), "%d.%m.%Y")
         except ValueError:
             logger.warning(f"Неверный формат даты платежа: {payment_date}")
             continue
 
-        if date_obj >= payment_date_obj >= date_obj - datetime.timedelta(days=day - 1):
+        if date_obj >= payment_date_obj >= date_obj - timedelta(days=day - 1):
             list_by_date.append(i)
     logger.info("Конец работы функции (filter_by_date)")
     return list_by_date
+
+
+def for_each_card(my_list: list) -> list:
+    """Функция создания информации по каждой карте"""
+    logger.info("Начало работы функции (for_each_card)")
+    cards = {}
+    result = []
+    logger.info("Перебор транзакций")
+    for i in my_list:
+        if i["Номер карты"] == "nan" or type(i["Номер карты"]) is float:
+            continue
+        elif i["Сумма платежа"] == "nan":
+            continue
+        else:
+            if i["Номер карты"][1:] in cards:
+                cards[i["Номер карты"][1:]] += float(str(i["Сумма платежа"])[1:])
+            else:
+                cards[i["Номер карты"][1:]] = float(str(i["Сумма платежа"])[1:])
+    for k, v in cards.items():
+        result.append(
+            {
+                "last_digits": k,
+                "total_spent": round(v, 2),
+                "cashback": round(v / 100, 2),
+            }
+        )
+    logger.info("Завершение работы функции (for_each_card)")
+    return result
