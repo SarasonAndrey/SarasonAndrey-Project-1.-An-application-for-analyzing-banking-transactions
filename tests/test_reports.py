@@ -16,7 +16,8 @@ def test_report(fix_reports):
     assert (
         spending_by_category(result_read, "Переводы", date="31.12.2021") == fix_reports
     )
-    assert result_spend[0] == fix_reports[0]
+    assert result_spend == fix_reports
+
 
 
 def test_reports():

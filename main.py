@@ -5,8 +5,7 @@ from src.services import simple_search
 from src.utils import currency_rates, get_price_stock, read_excel, top_five_transaction
 from src.views import df, filter_by_date, for_each_card, greetings, main
 
-# data_frame = pd.read_excel(r"C:\Users\YOGA 260\Pycharm_MY_Projects\Курсовые\project1\data\operations.xlsx")
-date = "2021-12-29"
+date="2021-12-12"
 string_search = "Электроника"
 currency = ["USD", "EUR", "RUB"]
 stocks = ["AAPL", "GOOGL", "MSFT"]
@@ -17,11 +16,11 @@ if __name__ == "__main__":
     print("#" * 20, "\n")
     print(greetings("2023-10-05 09:30:00"))
     print("#" * 20, "\n")
-    print(df.head(20))
+    print(df[["Дата платежа", "Сумма операции"]].head())
     print("#" * 20, "\n")
     print(main(date, df, stocks, currency))
     print("#" * 20, "\n")
-    print(filter_by_date(date, df.head(10)))
+    print(filter_by_date(date, df))
     print("#" * 20, "\n")
     print(simple_search(df, string_search))
     print("#" * 20, "\n")

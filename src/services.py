@@ -14,31 +14,31 @@ logger.setLevel(logging.INFO)
 
 
 @decorator_search
-def simple_search(df: pd.DataFrame, string_search: str):
-    """Функция поиска по переданной строке"""
-    result = []
-    logger.info("Начало работы функции (simple_search)")
+def simple_search(df, string_search):
+    # Преобразуем DataFrame в более простой формат
 
-    # Преобразуем DataFrame в список словарей
-    data_list = df.to_dict("records")
+    # Шаг 1: Преобразование Timestamp в строки
+    df = df.copy()
+    df['Дата операции'] = df['Дата операции'].astype(str)
 
-    for i in data_list:
-        if string_search == "":
-            return result
+    # Шаг 2: Поиск по строке (регистронезависимый)
+    result = df[
+        df.apply(
+            lambda row: string_search.lower() in str(row).lower(),
+            axis=1
+        )
+    ]
 
-        # Обработка NaN значений
-        description = str(i.get("Описание", "")).lower()
-        category = str(i.get("Категория", "")).lower()
-        search_term = string_search.lower()
+    try:
+        # Преобразование в список словарей и сериализация в JSON
+        result_list = result.to_dict('records')
 
-        if search_term in description or search_term in category:
-            result.append(i)
+        # Используем ensure_ascii=False для корректной поддержки кириллицы
+        data_json = json.dumps(result_list, ensure_ascii=False)
 
-    logger.info("Конец работы функции (simple_search)")
-    data_json = json.dumps(
-        result,
-        indent=4,
-        ensure_ascii=False,
-    )
+        return data_json
 
-    return data_json
+    except Exception as e:
+        # Простая обработка ошибок
+        print(f"Ошибка при поиске: {e}")
+        return "[]"

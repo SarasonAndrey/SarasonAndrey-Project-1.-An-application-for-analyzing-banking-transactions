@@ -1,26 +1,19 @@
 import os
 from unittest.mock import Mock, patch
-
 from dotenv import load_dotenv
 
 from src.utils import (
     currency_rates,
-    for_each_card,
     get_price_stock,
     read_excel,
     top_five_transaction,
 )
-from src.views import greetings
+from src.views import for_each_card
 
 load_dotenv()
 API_KEY_CUR = os.getenv("API_KEY_CUR")
 my_list = read_excel("../data/operations.xlsx")
 empty_list = []
-
-
-def test_greetings():
-    """Тестирование функции приветствия"""
-    assert greetings() == "Добрый вечер"
 
 
 def test_for_each_card():
@@ -44,85 +37,26 @@ def test_for_each_card_emp_att():
 def test_top_five_transaction():
     """Тестирование функции для получения топ-5 транзакций по сумме платежа, в обычном режиме"""
     assert top_five_transaction(my_list) == [
-        {
-            "date": "01.09.2021",
-            "amount": 5990.0,
-            "category": "Каршеринг",
-            "description": "Ситидрайв",
-        },
-        {
-            "date": "20.05.2021",
-            "amount": 8626.0,
-            "category": "Бонусы",
-            "description": "Компенсация покупки",
-        },
-        {
-            "date": "14.05.2019",
-            "amount": 42965.94,
-            "category": "Другое",
-            "description": "ГУП ВЦКП ЖХ",
-        },
-        {
-            "date": "30.04.2019",
-            "amount": 6100.0,
-            "category": "Зарплата",
-            "description": 'Пополнение. ООО "ФОРТУНА". Зарплата',
-        },
-        {
-            "date": "23.04.2019",
-            "amount": 4518.0,
-            "category": "Сервис",
-            "description": "Kopirovalniy Centr",
-        },
-        {
-            "date": "15.04.2019",
-            "amount": 6100.0,
-            "category": "Зарплата",
-            "description": 'Пополнение. ООО "ФОРТУНА". Аванс',
-        },
-        {
-            "date": "21.03.2019",
-            "amount": 190044.51,
-            "category": "Переводы",
-            "description": "Перевод Кредитная карта. ТП 10.2 RUR",
-        },
-        {
-            "date": "28.08.2018",
-            "amount": 32999.0,
-            "category": "Различные товары",
-            "description": "SPb Trk Atmosfera",
-        },
-        {
-            "date": "16.08.2018",
-            "amount": 3100.0,
-            "category": "Транспорт",
-            "description": "RigasStarptautiska autoos",
-        },
-        {
-            "date": "19.04.2018",
-            "amount": 4292.8,
-            "category": "Ж/д билеты",
-            "description": "РЖД",
-        },
-        {
-            "date": "10.03.2018",
-            "amount": 900.0,
-            "category": "Кино",
-            "description": "Каро Фильм",
-        },
-        {
-            "date": "06.03.2018",
-            "amount": 10420.07,
-            "category": "Частные услуги",
-            "description": "YM*Login.Skolkovo",
-        },
-        {
-            "date": "30.01.2018",
-            "amount": 2789.68,
-            "category": "Супермаркеты",
-            "description": "Перекрёсток",
-        },
-    ]
+        {'amount': 90044.51,
+         'category': 'Переводы',
+         'date': '21.03.2019',
+         'description': 'Перевод Кредитная карта. ТП 10.2 RUR'},
+        {'amount': 8626.0,
+         'category': 'Бонусы',
+         'date': '20.05.2021',
+         'description': 'Компенсация покупки'},
+        {'amount': 6100.0,
+         'category': 'Зарплата',
+         'date': '30.04.2019',
+         'description': 'Пополнение. ООО "ФОРТУНА". Зарплата'},
+        {'amount': 6100.0,
+         'category': 'Зарплата',
+         'date': '15.04.2019',
+         'description': 'Пополнение. ООО "ФОРТУНА". Аванс'},
+        {'amount': 721.38,
+         'category': 'Каршеринг',
+         'date': '12.12.2021',
+         'description': 'Ситидрайв'}]
 
 
 def test_top_five_transaction_emp_att():

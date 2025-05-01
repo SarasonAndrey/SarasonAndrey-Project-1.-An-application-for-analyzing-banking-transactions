@@ -5,7 +5,6 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
 API_KEY_CUR = os.getenv("API_KEY_CUR")
 SP_500_API_KEY = os.getenv("SP_500_API_KEY")
 
@@ -15,6 +14,7 @@ file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
 file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
+load_dotenv()
 
 
 def read_excel(path_file: str) -> list[dict]:
@@ -81,8 +81,8 @@ def top_five_transaction(my_list: list) -> list:
     for transaction in my_list:
         # Пропускаем отрицательные и категорию "Пополнения"
         if (
-            transaction["Категория"] == "Пополнения"
-            or str(transaction["Сумма платежа"])[0:1] == "-"
+                transaction["Категория"] == "Пополнения"
+                or str(transaction["Сумма платежа"])[0:1] == "-"
         ):
             continue
 
@@ -90,8 +90,8 @@ def top_five_transaction(my_list: list) -> list:
 
         # Обновляем максимальную сумму для категории
         if (
-            transaction["Категория"] not in all_transactions
-            or amount > all_transactions[transaction["Категория"]]
+                transaction["Категория"] not in all_transactions
+                or amount > all_transactions[transaction["Категория"]]
         ):
             all_transactions[transaction["Категория"]] = amount
 
@@ -102,9 +102,9 @@ def top_five_transaction(my_list: list) -> list:
 
         # Проверяем соответствие максимальной сумме в категории
         if (
-            category in all_transactions
-            and float(str(transaction["Сумма платежа"])[1:])
-            == all_transactions[category]
+                category in all_transactions
+                and float(str(transaction["Сумма платежа"])[1:])
+                == all_transactions[category]
         ):
             result.append(
                 {

@@ -1,4 +1,5 @@
 import logging
+import sys
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -21,27 +22,30 @@ file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 
+from datetime import datetime
 
-def greetings(input_datetime_str: str) -> str:
-    """Функция приветствия"""
 
-    input_datetime = datetime.strptime(input_datetime_str, "%Y-%m-%d %H:%M:%S")
-    time_obj = input_datetime.hour
-
-    if 5 <= time_obj < 12:
-        return '"Доброе утро"'
-    elif 12 <= time_obj < 18:
-        return '"Добрый день"'
-    elif 18 <= time_obj < 22:
-        return '"Добрый вечер"'
+def greetings(input_datetime_str=None):
+    """Функция для генерации приветствия в зависимости от времени"""
+    if input_datetime_str is None:
+        input_datetime = datetime.now()
     else:
-        return '"Доброй ночи"'
+        input_datetime = datetime.strptime(input_datetime_str, "%Y-%m-%d %H:%M:%S")
+
+    if 6 <= input_datetime.hour < 12:
+        return "Доброе утро"
+    elif 12 <= input_datetime.hour < 18:
+        return "Добрый день"
+    elif 18 <= input_datetime.hour < 24:
+        return "Добрый вечер"
+    else:
+        return "Доброй ночи"
 
 
 data_frame = pd.read_excel(
     r"C:\Users\YOGA 260\Pycharm_MY_Projects\Курсовые\project1\data\operations.xlsx"
 )
-# "../data/operations.xlsx""
+
 df = data_frame
 
 
@@ -73,63 +77,124 @@ def main(date: str, df_transactions: Any, stocks: list, currency: list):
     return date_json
 
 
-def filter_by_date(date: str, my_list: list) -> list:
-    """Функция фильтрующая данные по заданной дате"""
-    list_by_date = []
-    logger.info("Начало работы функции (filter_by_date)")
-    if date == "":
-        return list_by_date
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('date_filter.log', encoding='utf-8')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+def filter_by_date(date: str, df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Фильтрует DataFrame по диапазону дат за последнюю неделю
+
+    Args:
+        date (str): Дата в формате YYYY-MM-DD
+        df (pd.DataFrame): Исходный DataFrame
+
+    Returns:
+        pd.DataFrame: Отфильтрованный DataFrame
+    """
     try:
-        year, month, day = int(date[0:4]), int(date[5:7]), int(date[8:10])
-        date_obj = datetime(year, month, day)
-    except (ValueError, IndexError):
-        logger.error("Неверный формат даты")
-        return list_by_date
+        # Проверка входных данных
+        if df.empty:
+            logger.warning("Входной DataFrame пуст")
+            return pd.DataFrame()
 
-    for i in my_list:
-        if not isinstance(i, dict):
-            logger.warning("Элемент списка не является словарем")
-            continue
+        if not date:
+            logger.warning("Дата не указана")
+            return pd.DataFrame()
 
-        payment_date = i.get("Дата платежа")
-        if payment_date == "nan" or isinstance(payment_date, float):
-            continue
+        # Преобразование входной даты
+        target_date = pd.to_datetime(date)
+        start_date = target_date - pd.Timedelta(days=6)
+        end_date = target_date
 
-        try:
-            payment_date_obj = datetime.strptime(str(payment_date), "%d.%m.%Y")
-        except ValueError:
-            logger.warning(f"Неверный формат даты платежа: {payment_date}")
-            continue
+        logger.info(f"Диапазон дат: {start_date.date()} - {end_date.date()}")
 
-        if date_obj >= payment_date_obj >= date_obj - timedelta(days=day - 1):
-            list_by_date.append(i)
-    logger.info("Конец работы функции (filter_by_date)")
-    return list_by_date
-
-
-def for_each_card(my_list: list) -> list:
-    """Функция создания информации по каждой карте"""
-    logger.info("Начало работы функции (for_each_card)")
-    cards = {}
-    result = []
-    logger.info("Перебор транзакций")
-    for i in my_list:
-        if i["Номер карты"] == "nan" or type(i["Номер карты"]) is float:
-            continue
-        elif i["Сумма платежа"] == "nan":
-            continue
-        else:
-            if i["Номер карты"][1:] in cards:
-                cards[i["Номер карты"][1:]] += float(str(i["Сумма платежа"])[1:])
-            else:
-                cards[i["Номер карты"][1:]] = float(str(i["Сумма платежа"])[1:])
-    for k, v in cards.items():
-        result.append(
-            {
-                "last_digits": k,
-                "total_spent": round(v, 2),
-                "cashback": round(v / 100, 2),
-            }
+        # Преобразование столбца дат с учетом текущего формата
+        df['Дата операции'] = pd.to_datetime(
+            df['Дата операции'],
+            format='%d.%m.%Y %H:%M:%S',
+            errors='coerce'
         )
-    logger.info("Завершение работы функции (for_each_card)")
-    return result
+
+        # Фильтрация
+        filtered_df = df[
+            (df['Дата операции'] >= start_date) &
+            (df['Дата операции'] <= end_date)
+            ]
+
+        # Логирование результатов
+        logger.info(f"Найдено записей: {len(filtered_df)}")
+
+        return filtered_df
+
+    except Exception as e:
+        logger.error(f"Ошибка при фильтрации: {e}")
+        return pd.DataFrame()
+
+
+def for_each_card(final_list):
+    """
+    Обработка транзакций по каждой карте
+
+    Args:
+        final_list (list or pd.DataFrame): Список или DataFrame транзакций
+
+    Returns:
+        list: Обработанные транзакции
+    """
+    logger.info("Начало работы функции (for_each_card)")
+    logger.info("Перебор транзакций")
+
+    # Преобразование DataFrame в list словарей, если это необходимо
+    if isinstance(final_list, pd.DataFrame):
+        final_list = final_list.to_dict('records')
+
+    cards = []
+
+    for i in final_list:
+        try:
+            # Проверка на NaN или пустое значение
+            card_number = str(i.get("Номер карты", ""))
+
+            if pd.isna(card_number) or card_number == "nan" or card_number == "":
+                logger.warning(f"Пропуск транзакции с некорректным номером карты: {i}")
+                continue
+
+            # Дополнительная обработка транзакции
+            # Здесь может быть ваша логика
+
+            cards.append(i)
+
+        except Exception as e:
+            logger.error(f"Ошибка при обработке транзакции: {e}")
+            logger.error(f"Проблемная транзакция: {i}")
+
+    logger.info(f"Обработано транзакций: {len(cards)}")
+    return cards
+
+
+# В основной функции main():
+def main(date, df, stocks, currency):
+    logger.info("Начало работы главной функции (main)")
+
+    # Фильтрация по дате
+    final_list = filter_by_date(date, df)
+
+    # Преобразование в list словарей
+    final_list = final_list.to_dict('records')
+
+    # Вызов функции с обработкой
+    try:
+        cards = for_each_card(final_list)
+        return cards
+    except Exception as e:
+        logger.error(f"Ошибка в функции main: {e}")
+        return []
