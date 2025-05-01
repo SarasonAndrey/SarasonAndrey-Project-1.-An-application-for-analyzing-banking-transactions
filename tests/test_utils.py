@@ -1,13 +1,9 @@
 import os
 from unittest.mock import Mock, patch
+
 from dotenv import load_dotenv
 
-from src.utils import (
-    currency_rates,
-    get_price_stock,
-    read_excel,
-    top_five_transaction,
-)
+from src.utils import currency_rates, get_price_stock, read_excel, top_five_transaction
 from src.views import for_each_card
 
 load_dotenv()
@@ -37,26 +33,37 @@ def test_for_each_card_emp_att():
 def test_top_five_transaction():
     """Тестирование функции для получения топ-5 транзакций по сумме платежа, в обычном режиме"""
     assert top_five_transaction(my_list) == [
-        {'amount': 90044.51,
-         'category': 'Переводы',
-         'date': '21.03.2019',
-         'description': 'Перевод Кредитная карта. ТП 10.2 RUR'},
-        {'amount': 8626.0,
-         'category': 'Бонусы',
-         'date': '20.05.2021',
-         'description': 'Компенсация покупки'},
-        {'amount': 6100.0,
-         'category': 'Зарплата',
-         'date': '30.04.2019',
-         'description': 'Пополнение. ООО "ФОРТУНА". Зарплата'},
-        {'amount': 6100.0,
-         'category': 'Зарплата',
-         'date': '15.04.2019',
-         'description': 'Пополнение. ООО "ФОРТУНА". Аванс'},
-        {'amount': 721.38,
-         'category': 'Каршеринг',
-         'date': '12.12.2021',
-         'description': 'Ситидрайв'}]
+        {
+            "amount": 90044.51,
+            "category": "Переводы",
+            "date": "21.03.2019",
+            "description": "Перевод Кредитная карта. ТП 10.2 RUR",
+        },
+        {
+            "amount": 8626.0,
+            "category": "Бонусы",
+            "date": "20.05.2021",
+            "description": "Компенсация покупки",
+        },
+        {
+            "amount": 6100.0,
+            "category": "Зарплата",
+            "date": "30.04.2019",
+            "description": 'Пополнение. ООО "ФОРТУНА". Зарплата',
+        },
+        {
+            "amount": 6100.0,
+            "category": "Зарплата",
+            "date": "15.04.2019",
+            "description": 'Пополнение. ООО "ФОРТУНА". Аванс',
+        },
+        {
+            "amount": 721.38,
+            "category": "Каршеринг",
+            "date": "12.12.2021",
+            "description": "Ситидрайв",
+        },
+    ]
 
 
 def test_top_five_transaction_emp_att():

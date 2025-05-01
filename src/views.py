@@ -1,6 +1,6 @@
 import logging
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -22,7 +22,15 @@ file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 
-from datetime import datetime
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("date_filter.log", encoding="utf-8"),
+    ],
+)
+logger = logging.getLogger(__name__)
 
 
 def greetings(input_datetime_str=None):
@@ -49,7 +57,7 @@ data_frame = pd.read_excel(
 df = data_frame
 
 
-def main(date: str, df_transactions: Any, stocks: list, currency: list):
+def main_(date: str, df_transactions: Any, stocks: list, currency: list):
     """Функция создающая JSON ответ для главной страницы"""
     logger.info("Начало работы главной функции (main)")
     final_list = filter_by_date(date, df_transactions)
@@ -75,18 +83,6 @@ def main(date: str, df_transactions: Any, stocks: list, currency: list):
     )
     logger.info("Завершение работы главной функции (main)")
     return date_json
-
-
-# Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('date_filter.log', encoding='utf-8')
-    ]
-)
-logger = logging.getLogger(__name__)
 
 
 def filter_by_date(date: str, df: pd.DataFrame) -> pd.DataFrame:
@@ -118,17 +114,14 @@ def filter_by_date(date: str, df: pd.DataFrame) -> pd.DataFrame:
         logger.info(f"Диапазон дат: {start_date.date()} - {end_date.date()}")
 
         # Преобразование столбца дат с учетом текущего формата
-        df['Дата операции'] = pd.to_datetime(
-            df['Дата операции'],
-            format='%d.%m.%Y %H:%M:%S',
-            errors='coerce'
+        df["Дата операции"] = pd.to_datetime(
+            df["Дата операции"], format="%d.%m.%Y %H:%M:%S", errors="coerce"
         )
 
         # Фильтрация
         filtered_df = df[
-            (df['Дата операции'] >= start_date) &
-            (df['Дата операции'] <= end_date)
-            ]
+            (df["Дата операции"] >= start_date) & (df["Дата операции"] <= end_date)
+        ]
 
         # Логирование результатов
         logger.info(f"Найдено записей: {len(filtered_df)}")
@@ -155,7 +148,7 @@ def for_each_card(final_list):
 
     # Преобразование DataFrame в list словарей, если это необходимо
     if isinstance(final_list, pd.DataFrame):
-        final_list = final_list.to_dict('records')
+        final_list = final_list.to_dict("records")
 
     cards = []
 
@@ -181,7 +174,7 @@ def for_each_card(final_list):
     return cards
 
 
-# В основной функции main():
+
 def main(date, df, stocks, currency):
     logger.info("Начало работы главной функции (main)")
 
@@ -189,7 +182,7 @@ def main(date, df, stocks, currency):
     final_list = filter_by_date(date, df)
 
     # Преобразование в list словарей
-    final_list = final_list.to_dict('records')
+    final_list = final_list.to_dict("records")
 
     # Вызов функции с обработкой
     try:

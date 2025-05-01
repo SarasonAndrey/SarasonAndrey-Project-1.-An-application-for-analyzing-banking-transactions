@@ -1,13 +1,12 @@
+import json
 import os
 from unittest.mock import patch
 
+import pandas as pd
 from dotenv import load_dotenv
 
-import json
-import pandas as pd
-
-from src.utils import (read_excel)
-from src.views import greetings, main, for_each_card
+from src.utils import read_excel
+from src.views import for_each_card, greetings, main
 
 load_dotenv()
 API_KEY_CUR = os.getenv("API_KEY_CUR")
@@ -38,118 +37,75 @@ def test_for_each_card_emp_att():
     assert for_each_card(empty_list) == []
 
 
-@patch('requests.get')
+@patch("requests.get")
 def test_main(mock_get):
     mock_get.return_value.json.return_value = {
         "greeting": "Добрый день",
         "cards": [
-            {
-                "last_digits": "4556",
-                "total_spent": 30862.13,
-                "cashback": 308.62
-            },
-            {
-                "last_digits": "7197",
-                "total_spent": 26890.62,
-                "cashback": 268.91
-            },
-            {
-                "last_digits": "5091",
-                "total_spent": 1974.17,
-                "cashback": 19.74
-            }
+            {"last_digits": "4556", "total_spent": 30862.13, "cashback": 308.62},
+            {"last_digits": "7197", "total_spent": 26890.62, "cashback": 268.91},
+            {"last_digits": "5091", "total_spent": 1974.17, "cashback": 19.74},
         ],
         "top_transactions": [
             {
                 "date": "25.11.2021",
                 "amount": 4451.0,
                 "category": "Другое",
-                "description": "Федеральная Налоговая Служба"
+                "description": "Федеральная Налоговая Служба",
             },
             {
                 "date": "23.11.2021",
                 "amount": 126105.03,
                 "category": "Переводы",
-                "description": "Перевод Кредитная карта. ТП 10.2 RUR"
+                "description": "Перевод Кредитная карта. ТП 10.2 RUR",
             },
             {
                 "date": "16.11.2021",
                 "amount": 65.0,
                 "category": "Бонусы",
-                "description": "Вознаграждение за операции покупок"
-            }
+                "description": "Вознаграждение за операции покупок",
+            },
         ],
         "currency_rates": [
-            {
-                "currency": "USD",
-                "rate": 91.38
-            },
-            {
-                "currency": "EUR",
-                "rate": 102.1
-            }
+            {"currency": "USD", "rate": 91.38},
+            {"currency": "EUR", "rate": 102.1},
         ],
-        "stock_prices": [
-            {
-                "stock": "AAPL",
-                "price": 228.03
-            }]}
-    res = main("2021.11.30", "../data/operations.xlsx", ["AAPL"],
-               ["USD", "EUR"])
+        "stock_prices": [{"stock": "AAPL", "price": 228.03}],
+    }
+    res = main("2021.11.30", "../data/operations.xlsx", ["AAPL"], ["USD", "EUR"])
     ext = {
         "greeting": "Добрый день",
         "cards": [
-            {
-                "last_digits": "4556",
-                "total_spent": 30862.13,
-                "cashback": 308.62
-            },
-            {
-                "last_digits": "7197",
-                "total_spent": 26890.62,
-                "cashback": 268.91
-            },
-            {
-                "last_digits": "5091",
-                "total_spent": 1974.17,
-                "cashback": 19.74
-            }
+            {"last_digits": "4556", "total_spent": 30862.13, "cashback": 308.62},
+            {"last_digits": "7197", "total_spent": 26890.62, "cashback": 268.91},
+            {"last_digits": "5091", "total_spent": 1974.17, "cashback": 19.74},
         ],
         "top_transactions": [
             {
                 "date": "25.11.2021",
                 "amount": 4451.0,
                 "category": "Другое",
-                "description": "Федеральная Налоговая Служба"
+                "description": "Федеральная Налоговая Служба",
             },
             {
                 "date": "23.11.2021",
                 "amount": 126105.03,
                 "category": "Переводы",
-                "description": "Перевод Кредитная карта. ТП 10.2 RUR"
+                "description": "Перевод Кредитная карта. ТП 10.2 RUR",
             },
             {
                 "date": "16.11.2021",
                 "amount": 65.0,
                 "category": "Бонусы",
-                "description": "Вознаграждение за операции покупок"
-            }
+                "description": "Вознаграждение за операции покупок",
+            },
         ],
         "currency_rates": [
-            {
-                "currency": "USD",
-                "rate": 96.4
-            },
-            {
-                "currency": "EUR",
-                "rate": 105.85
-            }
+            {"currency": "USD", "rate": 96.4},
+            {"currency": "EUR", "rate": 105.85},
         ],
-        "stock_prices": [
-            {
-                "stock": "AAPL",
-                "price": 228.03
-            }]}
+        "stock_prices": [{"stock": "AAPL", "price": 228.03}],
+    }
 
     assert res == ext
 
@@ -160,16 +116,16 @@ def test_main_function_empty_input(mocker):
     empty_df = pd.DataFrame()
 
     # Мокаем зависимости
-    mocker.patch('your_module.filter_by_date', return_value=empty_df)
-    mocker.patch('your_module.greetings', return_value='Привет')
-    mocker.patch('your_module.for_each_card', return_value=[])
-    mocker.patch('your_module.top_five_transaction', return_value=[])
-    mocker.patch('your_module.get_price_stock', return_value={})
-    mocker.patch('your_module.currency_rates', return_value={})
-    mocker.patch('your_module.logger.info')
+    mocker.patch("your_module.filter_by_date", return_value=empty_df)
+    mocker.patch("your_module.greetings", return_value="Привет")
+    mocker.patch("your_module.for_each_card", return_value=[])
+    mocker.patch("your_module.top_five_transaction", return_value=[])
+    mocker.patch("your_module.get_price_stock", return_value={})
+    mocker.patch("your_module.currency_rates", return_value={})
+    mocker.patch("your_module.logger.info")
 
     # Вызываем функцию
-    result_json = main('2023-05-01', empty_df, [], [])
+    result_json = main("2023-05-01", empty_df, [], [])
 
     # Преобразуем JSON
     result = json.loads(result_json)

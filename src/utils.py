@@ -70,58 +70,36 @@ def currency_rates(currencies: list[str]) -> list[dict[str, str | float]]:
     return result
 
 
-def top_five_transaction(my_list: list) -> list:
-    """Функция для получения топ-5 транзакций по сумме платежа"""
-    logger.info("Начало работы функции (top_five_transaction)")
+def top_five_transaction(final_list):
+    # Проверка, является ли входной объект DataFrame
+    if isinstance(final_list, pd.DataFrame):
+        # Преобразование DataFrame в список словарей
+        transactions = final_list.to_dict('records')
+    else:
+        transactions = final_list
 
-    # Словарь для хранения максимальных транзакций по категориям
-    all_transactions = {}
+    # Проверка на пустоту
+    if not transactions:
+        return []
 
-    # Первый проход: определяем максимальные суммы по категориям
-    for transaction in my_list:
-        # Пропускаем отрицательные и категорию "Пополнения"
-        if (
-                transaction["Категория"] == "Пополнения"
-                or str(transaction["Сумма платежа"])[0:1] == "-"
-        ):
-            continue
+    # Фильтрация пополнений
+    replenishments = [
+        trans for trans in transactions
+        if trans.get('Категория') == 'Пополнения'
+    ]
 
-        amount = float(str(transaction["Сумма платежа"])[1:])
+    # Сортировка и первые 5
+    try:
+        top_five = sorted(
+            replenishments,
+            key=lambda x: float(x.get('Сумма', 0)),
+            reverse=True
+        )[:5]
+    except (ValueError, TypeError) as e:
+        logger.error(f"Ошибка сортировки транзакций: {e}")
+        top_five = []
 
-        # Обновляем максимальную сумму для категории
-        if (
-                transaction["Категория"] not in all_transactions
-                or amount > all_transactions[transaction["Категория"]]
-        ):
-            all_transactions[transaction["Категория"]] = amount
-
-    # Второй проход: собираем топовые транзакции
-    result = []
-    for transaction in my_list:
-        category = transaction["Категория"]
-
-        # Проверяем соответствие максимальной сумме в категории
-        if (
-                category in all_transactions
-                and float(str(transaction["Сумма платежа"])[1:])
-                == all_transactions[category]
-        ):
-            result.append(
-                {
-                    "date": transaction["Дата платежа"],
-                    "amount": all_transactions[category],
-                    "category": category,
-                    "description": transaction["Описание"],
-                }
-            )
-
-    # Сортируем и берем топ-5
-    result.sort(key=lambda x: x["amount"], reverse=True)
-    result = result[:5]
-
-    logger.info("Окончание работы функции (top_five_transaction)")
-    return result
-
+    return top_five
 
 def get_price_stock(stocks: list) -> list:
     """Функция для получения данных об акциях из списка S&P500"""

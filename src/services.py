@@ -1,8 +1,6 @@
 import json
 import logging
 
-import pandas as pd
-
 from src.decorators import decorator_search
 
 logger = logging.getLogger("services.log")
@@ -19,19 +17,14 @@ def simple_search(df, string_search):
 
     # Шаг 1: Преобразование Timestamp в строки
     df = df.copy()
-    df['Дата операции'] = df['Дата операции'].astype(str)
+    df["Дата операции"] = df["Дата операции"].astype(str)
 
     # Шаг 2: Поиск по строке (регистронезависимый)
-    result = df[
-        df.apply(
-            lambda row: string_search.lower() in str(row).lower(),
-            axis=1
-        )
-    ]
+    result = df[df.apply(lambda row: string_search.lower() in str(row).lower(), axis=1)]
 
     try:
         # Преобразование в список словарей и сериализация в JSON
-        result_list = result.to_dict('records')
+        result_list = result.to_dict("records")
 
         # Используем ensure_ascii=False для корректной поддержки кириллицы
         data_json = json.dumps(result_list, ensure_ascii=False)
