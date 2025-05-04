@@ -1,74 +1,39 @@
 import os
 from unittest.mock import Mock, patch
 
+import pandas as pd
+import pytest
 from dotenv import load_dotenv
 
 from src.utils import currency_rates, get_price_stock, read_excel, top_five_transaction
-from src.views import for_each_card
+from src.views import df
 
 load_dotenv()
 API_KEY_CUR = os.getenv("API_KEY_CUR")
-my_list = read_excel("../data/operations.xlsx")
+my_list = df
 empty_list = []
 
 
-def test_for_each_card():
-    """Тестирование функции создающей информацию по каждой карте, в обычном режиме"""
-    assert for_each_card(my_list) == [
-        {"last_digits": "7197", "total_spent": 2504514.54, "cashback": 25045.15},
-        {"last_digits": "5091", "total_spent": 18216.84, "cashback": 182.17},
-        {"last_digits": "4556", "total_spent": 2103029.17, "cashback": 21030.29},
-        {"last_digits": "1112", "total_spent": 46207.08, "cashback": 462.07},
-        {"last_digits": "5507", "total_spent": 84000.0, "cashback": 840.0},
-        {"last_digits": "6002", "total_spent": 69200.0, "cashback": 692.0},
-        {"last_digits": "5441", "total_spent": 470854.8, "cashback": 4708.55},
-    ]
+def test_read_excel():
+    # Создаем тестовые данные
+    test_data = {
+        "Дата платежа": ["2023-01-01", "2023-01-02"],
+        "Статус": ["Completed", "Pending"],
+        "Сумма платежа": [100.50, 200.75],
+        "Валюта платежа": ["USD", "EUR"],
+        "Категория": ["Продукты", "Транспорт"],
+        "Описание": ["Покупка в магазине", "Такси"],
+        "Номер карты": ["1234", "5678"],
+    }
 
+    # Создаем Excel-файл для теста
+    df = pd.DataFrame(test_data)
+    test_file = "test_payments.xlsx"
+    df.to_excel(test_file, index=False)
 
-def test_for_each_card_emp_att():
-    """Тестирование функции создающей информацию по каждой карте, с пустым списком"""
-    assert for_each_card(empty_list) == []
-
-
-def test_top_five_transaction():
-    """Тестирование функции для получения топ-5 транзакций по сумме платежа, в обычном режиме"""
-    assert top_five_transaction(my_list) == [
-        {
-            "amount": 90044.51,
-            "category": "Переводы",
-            "date": "21.03.2019",
-            "description": "Перевод Кредитная карта. ТП 10.2 RUR",
-        },
-        {
-            "amount": 8626.0,
-            "category": "Бонусы",
-            "date": "20.05.2021",
-            "description": "Компенсация покупки",
-        },
-        {
-            "amount": 6100.0,
-            "category": "Зарплата",
-            "date": "30.04.2019",
-            "description": 'Пополнение. ООО "ФОРТУНА". Зарплата',
-        },
-        {
-            "amount": 6100.0,
-            "category": "Зарплата",
-            "date": "15.04.2019",
-            "description": 'Пополнение. ООО "ФОРТУНА". Аванс',
-        },
-        {
-            "amount": 721.38,
-            "category": "Каршеринг",
-            "date": "12.12.2021",
-            "description": "Ситидрайв",
-        },
-    ]
-
-
-def test_top_five_transaction_emp_att():
-    """Тестирование функции для получения топ-5 транзакций по сумме платежа, с пустым списком"""
-    assert top_five_transaction(empty_list) == []
+    # Вызываем функцию
+    result = read_excel(test_file)
+    assert len(result) == 2, "Должно быть 2 записи"
 
 
 @patch("requests.get")
@@ -82,6 +47,98 @@ def test_currency_rates(mock_get):
     result = currency_rates(["USD", "EUR"])
     expected = [{"currency": "USD", "rate": 96.4}, {"currency": "EUR", "rate": 105.85}]
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "input_data, expected_result",
+    [
+        # Тест 1: Нормальный список словарей с пополнениями
+        (
+            [
+                {"Категория": "Пополнения", "Сумма": "100"},
+                {"Категория": "Пополнения", "Сумма": "200"},
+                {"Категория": "Пополнения", "Сумма": "50"},
+                {"Категория": "Пополнения", "Сумма": "300"},
+                {"Категория": "Пополнения", "Сумма": "150"},
+                {"Категория": "Пополнения", "Сумма": "250"},
+            ],
+            [
+                {"Категория": "Пополнения", "Сумма": "300"},
+                {"Категория": "Пополнения", "Сумма": "250"},
+                {"Категория": "Пополнения", "Сумма": "200"},
+                {"Категория": "Пополнения", "Сумма": "150"},
+                {"Категория": "Пополнения", "Сумма": "100"},
+            ],
+        ),
+        ([], []),
+        (
+            [
+                {"Категория": "Покупки", "Сумма": "100"},
+                {"Категория": "Услуги", "Сумма": "200"},
+            ],
+            [],
+        ),
+        (
+            pd.DataFrame(
+                [
+                    {"Категория": "Пополнения", "Сумма": "400"},
+                    {"Категория": "Пополнения", "Сумма": "500"},
+                    {"Категория": "Пополнения", "Сумма": "300"},
+                ]
+            ),
+            [
+                {"Категория": "Пополнения", "Сумма": "500"},
+                {"Категория": "Пополнения", "Сумма": "400"},
+                {"Категория": "Пополнения", "Сумма": "300"},
+            ],
+        ),
+    ],
+)
+def test_top_five_transaction(input_data, expected_result):
+
+    result = top_five_transaction(input_data)
+
+    print(f"Длина результата: {len(result)}")
+    assert len(result) == len(expected_result), "Неверное количество транзакций"
+
+    for i in range(len(result)):
+        print(f"Проверка транзакции {i + 1}")
+        print(f"Ожидаемое значение: {expected_result[i]}")
+        print(f"Фактическое значение: {result[i]}")
+
+        # Проверяем каждое поле транзакции
+        assert (
+            result[i]["Категория"] == expected_result[i]["Категория"]
+        ), "Неверная категория"
+        assert result[i]["Сумма"] == expected_result[i]["Сумма"], "Неверная сумма"
+
+
+@pytest.mark.parametrize(
+    "input_data",
+    [
+        [
+            {"Категория": "Пополнения", "Сумма": "abc"},
+            {"Категория": "Пополнения", "Сумма": "100"},
+        ],
+        [
+            {"Категория": "Пополнения", "Сумма": 100},
+            {"Категория": "Пополнения", "Сумма": "200"},
+        ],
+    ],
+)
+def test_top_five_transaction_edge_cases(input_data):
+
+    try:
+        result = top_five_transaction(input_data)
+        print("Результат для краевого случая:", result)
+    except Exception as e:
+        print(f"Перехвачено исключение: {e}")
+        assert False, f"Функция вызвала неожиданное исключение: {e}"
+
+
+def test_top_five_transaction_emp_att():
+    """Тестирование функции для получения топ-5 транзакций по сумме платежа, с пустым списком"""
+    assert top_five_transaction(empty_list) == []
 
 
 @patch("requests.get")

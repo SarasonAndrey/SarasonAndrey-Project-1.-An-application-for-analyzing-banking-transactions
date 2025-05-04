@@ -74,7 +74,7 @@ def top_five_transaction(final_list):
     # Проверка, является ли входной объект DataFrame
     if isinstance(final_list, pd.DataFrame):
         # Преобразование DataFrame в список словарей
-        transactions = final_list.to_dict('records')
+        transactions = final_list.to_dict("records")
     else:
         transactions = final_list
 
@@ -84,22 +84,20 @@ def top_five_transaction(final_list):
 
     # Фильтрация пополнений
     replenishments = [
-        trans for trans in transactions
-        if trans.get('Категория') == 'Пополнения'
+        trans for trans in transactions if trans.get("Категория") == "Пополнения"
     ]
 
     # Сортировка и первые 5
     try:
         top_five = sorted(
-            replenishments,
-            key=lambda x: float(x.get('Сумма', 0)),
-            reverse=True
+            replenishments, key=lambda x: float(x.get("Сумма", 0)), reverse=True
         )[:5]
     except (ValueError, TypeError) as e:
         logger.error(f"Ошибка сортировки транзакций: {e}")
         top_five = []
 
     return top_five
+
 
 def get_price_stock(stocks: list) -> list:
     """Функция для получения данных об акциях из списка S&P500"""

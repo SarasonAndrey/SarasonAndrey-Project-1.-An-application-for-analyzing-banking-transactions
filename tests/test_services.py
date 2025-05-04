@@ -34,13 +34,13 @@ def test_simple_search_match_category():
     """Тест на поиск по категории"""
     df = pd.DataFrame(
         [
-            {"Описание": "MacBook", "Категория": "Компьютеры"},
-            {"Описание": "iPhone", "Категория": "Телефоны"},
+            {"Описание": "Ситидрайв", "Категория": "Каршеринг"},
+            {"Описание": "McDonald's", "Категория": "Фастфуд"},
         ]
     )
-    result = json.loads(simple_search(df, "телефоны"))
+    result = json.loads(simple_search(df, "McDonald's"))
     assert len(result) == 1
-    assert result[0]["Категория"] == "Телефоны"
+    assert result[0]["Категория"] == "Фастфуд"
 
 
 def test_simple_search_case_insensitive():

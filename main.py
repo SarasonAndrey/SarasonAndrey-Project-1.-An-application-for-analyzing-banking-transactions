@@ -6,7 +6,7 @@ from src.utils import currency_rates, get_price_stock, read_excel, top_five_tran
 from src.views import df, filter_by_date, for_each_card, greetings, main, main_
 
 date = "2021-12-12"
-string_search = "Электроника"
+string_search = "Ozon.ru"
 currency = ["USD", "EUR", "RUB"]
 stocks = ["AAPL", "GOOGL", "MSFT"]
 category = "Переводы"

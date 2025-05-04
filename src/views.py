@@ -152,27 +152,31 @@ def for_each_card(final_list):
 
     cards = []
 
-    for i in final_list:
+    for transaction in final_list:
         try:
-            # Проверка на NaN или пустое значение
-            card_number = str(i.get("Номер карты", ""))
+            # Получаем номер карты с обработкой разных вариантов
+            card_number = transaction.get("Номер карты")
 
-            if pd.isna(card_number) or card_number == "nan" or card_number == "":
-                logger.warning(f"Пропуск транзакции с некорректным номером карты: {i}")
-                continue
+            # Строгие критерии валидности номера карты
+            is_valid_card = (
+                card_number is not None  # Не None
+                and card_number != ""  # Не пустая строка
+                and str(card_number).lower() != "nan"  # Не строка "nan"
+            )
 
-            # Дополнительная обработка транзакции
-            # Здесь может быть ваша логика
-
-            cards.append(i)
+            if is_valid_card:
+                cards.append(transaction)
+            else:
+                logger.warning(
+                    f"Пропуск транзакции с невалидным номером карты: {transaction}"
+                )
 
         except Exception as e:
             logger.error(f"Ошибка при обработке транзакции: {e}")
-            logger.error(f"Проблемная транзакция: {i}")
+            logger.error(f"Проблемная транзакция: {transaction}")
 
     logger.info(f"Обработано транзакций: {len(cards)}")
     return cards
-
 
 
 def main(date, df, stocks, currency):
