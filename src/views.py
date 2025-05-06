@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 
 import pandas as pd
-from pandas.io import json
+import json
 
 from src.utils import currency_rates, get_price_stock, top_five_transaction
 
@@ -50,11 +50,20 @@ def greetings(input_datetime_str=None):
         return "Доброй ночи"
 
 
-data_frame = pd.read_excel(
-    r"C:\Users\YOGA 260\Pycharm_MY_Projects\Курсовые\project1\data\operations.xlsx"
-)
+data_frame = pd.read_excel("./data/operations.xlsx")
 
 df = data_frame
+
+
+def convert_timestamps(obj):
+    if isinstance(obj, dict):
+        return {k: convert_timestamps(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_timestamps(elem) for elem in obj]
+    elif isinstance(obj, pd.Timestamp):
+        return obj.isoformat()
+    else:
+        return obj
 
 
 def main_(date: str, df_transactions: Any, stocks: list, currency: list):
@@ -76,8 +85,11 @@ def main_(date: str, df_transactions: Any, stocks: list, currency: list):
             "stock_prices": stocks_prices,
         }
     ]
+    result_serializable = convert_timestamps(result)
+
+
     date_json = json.dumps(
-        result,
+        result_serializable,
         indent=4,
         ensure_ascii=False,
     )
