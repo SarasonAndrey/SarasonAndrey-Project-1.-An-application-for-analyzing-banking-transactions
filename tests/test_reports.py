@@ -1,0 +1,25 @@
+import pytest
+
+from src.reports import spending_by_category
+from src.views import df
+
+result_read = df
+result_spend = spending_by_category(result_read, "Переводы", date="31.12.2021")
+
+
+@pytest.fixture
+def fix_reports():
+    return result_spend
+
+
+def test_report(fix_reports):
+    assert (
+        spending_by_category(result_read, "Переводы", date="31.12.2021") == fix_reports
+    )
+    assert result_spend == fix_reports
+
+
+def test_reports():
+    assert spending_by_category(result_read, "Переводы") == []
+    assert spending_by_category(result_read, "Красота") == []
+    assert spending_by_category(result_read, "sdfsf") == []
